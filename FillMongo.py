@@ -7,9 +7,17 @@ from datetime import datetime, timedelta
 from random import choice
 import numpy as np
 import logging
+from random import getrandbits
+import hashlib
+from time import sleep
+
+try:
+    from tqdm import trange as range
+except Exception:
+    pass
 
 
-class performaeMetrics:
+class performanceMetrics:
     metrics: Dict = {}
     client: MongoClient = None
     collation: Collection = None
@@ -72,6 +80,9 @@ class performaeMetrics:
             return False
         return True
 
+    def getMetricDict(self) -> Dict:
+        return self.metrics
+
     @classmethod
     def createRandomData(cls) -> Dict:
         """
@@ -79,6 +90,7 @@ class performaeMetrics:
         """
         # This can probbaly be found from WDL file and jaws at start
         output = {
+            "_id": getrandbits(32),
             "submit_time": datetime.now().strftime("%m-%d-%Y %H:%M:%S.%f"),
             "compute_platform": choice(['cori', 'jgi', 'aws', 'pnnl']),
             "requested_cpu": np.random.binomial(n=48, p=0.5),
@@ -107,7 +119,7 @@ class performaeMetrics:
 
 # TODO:
 #   Properly setup mongo with good username/password
-#   Probably even better to have an api key
+#   Probably even better to have an api key?
 client = MongoClient('127.0.0.1',
                      username="root",
                      password="rootpassword")
@@ -120,11 +132,10 @@ except Exception as e:
     exit(1)
 
 
-perf = performaeMetrics(collection=collection)
-for _ in range(20_000):
-    # print(createRandomData())
-    # TODO: This goes at the end of
-    if _ % 1000 == 0:
-        print(f"################ {_:03d} #####################")
-    perf.addDataDict(performaeMetrics.createRandomData())
+for num in range(200):
+    perf = performanceMetrics(collection=collection)
+    # TODO: Put data into the performance object
+    perf.addDataDict(performanceMetrics.createRandomData())
+    perf.addDataKeyVal("event", num)
+    # Insert into mongodb
     perf.insert()
