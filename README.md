@@ -4,9 +4,9 @@
 
 ## Requirements
 
-- [] Docker
-- [] Python3
-- [] [`pip install -r requirements.txt`](requirements.txt)
+- Docker
+- Python3
+- [`pip install -r requirements.txt`](requirements.txt)
 
 ## Testing it out
 

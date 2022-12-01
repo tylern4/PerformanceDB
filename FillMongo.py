@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import multiprocessing as mp
 from typing import Dict
 from pymongo import MongoClient
 from pymongo.collection import Collection
@@ -8,7 +9,6 @@ from random import choice
 import numpy as np
 import logging
 from random import getrandbits
-import hashlib
 from time import sleep
 
 try:
@@ -18,9 +18,9 @@ except Exception:
 
 
 class performanceMetrics:
-    metrics: Dict = {}
-    client: MongoClient = None
-    collation: Collection = None
+    _metrics: Dict = {}
+    _client: MongoClient = None
+    _collation: Collection = None
 
     def __init__(self,
                  collection: Collection = None,
@@ -40,11 +40,12 @@ class performanceMetrics:
         """
 
         if collection is not None:
-            self.collation = collection
+            self._collation = collection
         elif client is not None:
-            self.client = client
+            self._client = client
             # Get default performance collection from client
-            self.collation = self.client["performance"].get_collection("perf")
+            self._collation = self._client["performance"].get_collection(
+                "perf")
         else:
             raise
 
@@ -52,36 +53,47 @@ class performanceMetrics:
             self.addDataDict(startData)
 
     def __del__(self):
-        if self.metrics:
+        if self._metrics:
             self.insert()
 
-    def insert(self):
-        if self.collation is not None:
+    def insert(self) -> bool:
+        """
+        Insert metrics into mongodb
+        """
+        if self._collation is not None:
             try:
-                self.collation.insert_one(self.metrics)
+                self._collation.insert_one(self._metrics)
             except Exception as e:
                 logging.error(f"Insert {e}")
-        self.metrics = {}
+                return False
+        self._metrics = {}
+        return True
 
     def addDataDict(self, data: Dict = None) -> bool:
+        """
+        Add dictionary of data to the metrics dictionary
+        """
         try:
             for key, value in data.items():
-                self.metrics[key] = value
+                self._metrics[key] = value
         except Exception as e:
             logging.error(f"addDataDict {e}")
             return False
         return True
 
     def addDataKeyVal(self, key: str = None, value=None) -> bool:
+        """
+        Add key value to the 
+        """
         try:
-            self.metrics[key] = value
+            self._metrics[key] = value
         except Exception as e:
             logging.error(e)
             return False
         return True
 
     def getMetricDict(self) -> Dict:
-        return self.metrics
+        return self._metrics
 
     @classmethod
     def createRandomData(cls) -> Dict:
